@@ -1,0 +1,12 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.onnx
+artifacts/*.csv
+artifacts/cache/
+.dockerignore

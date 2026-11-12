@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+streamlit
+transformers
+sentencepiece
+protobuf
+huggingface_hub
+pandas
+scikit-learn
+joblib
+requests
+httpx
+pytest
