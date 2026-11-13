@@ -149,7 +149,26 @@ def _metrics_factory(np: Any) -> Any:
     def compute_metrics(eval_prediction: Any) -> dict[str, float]:
         logits, labels = eval_prediction
         probabilities = 1 / (1 + np.exp(-logits[:, 1]))
+        invalid_probabilities = ~np.isfinite(probabilities)
+        if np.any(invalid_probabilities):
+            print(
+                "WARNING: Non-finite evaluation probabilities detected; "
+                "replacing them with 0.5."
+            )
+            probabilities = np.nan_to_num(
+                probabilities,
+                nan=0.5,
+                posinf=0.5,
+                neginf=0.5,
+            )
         predictions = (probabilities >= 0.5).astype(int)
+        invalid_predictions = ~np.isfinite(predictions)
+        if np.any(invalid_predictions):
+            print(
+                "WARNING: Non-finite evaluation predictions detected; "
+                "replacing them with 0."
+            )
+            predictions = np.nan_to_num(predictions, nan=0, posinf=0, neginf=0).astype(int)
         return {
             "pr_auc": float(average_precision_score(labels, probabilities)),
             "f1": float(f1_score(labels, predictions, zero_division=0)),
@@ -164,12 +183,14 @@ def _arguments(TrainingArguments: Any, config: dict[str, Any], use_fp16: bool) -
         "output_dir": str(ROOT / config["output_dir"]),
         "per_device_train_batch_size": int(config["batch_size"]),
         "per_device_eval_batch_size": int(config["batch_size"]),
-        "learning_rate": float(config["learning_rate"]),
+        "learning_rate": 1e-5,
         "num_train_epochs": float(config["num_train_epochs"]),
-        "warmup_ratio": float(config["warmup_ratio"]),
+        "warmup_ratio": 0.1,
         "fp16": False,
         "bf16": False,
         "optim": "adamw_torch",
+        "max_grad_norm": 1.0,
+        "weight_decay": 0.01,
         "seed": int(config["seed"]),
         "data_seed": int(config["seed"]),
         "evaluation_strategy": "epoch",
