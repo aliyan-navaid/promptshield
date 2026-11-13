@@ -1,10 +1,10 @@
-model_name: microsoft/deberta-v3-small
+model_name: FacebookAI/roberta-base
 max_len: 256
 batch_size: 32
 learning_rate: 0.00002
 num_train_epochs: 3
 warmup_ratio: 0.1
-fp16: true
+fp16: false
 seed: 42
 output_dir: artifacts/checkpoints/deberta-small
 logging_steps: 50

@@ -183,7 +183,7 @@ def _arguments(TrainingArguments: Any, config: dict[str, Any], use_fp16: bool) -
         "output_dir": str(ROOT / config["output_dir"]),
         "per_device_train_batch_size": int(config["batch_size"]),
         "per_device_eval_batch_size": int(config["batch_size"]),
-        "learning_rate": 1e-5,
+        "learning_rate": 2e-5,
         "num_train_epochs": float(config["num_train_epochs"]),
         "warmup_ratio": 0.1,
         "fp16": False,
