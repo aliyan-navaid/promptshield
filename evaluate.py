@@ -257,9 +257,18 @@ def _write_predictions(
 def evaluate(checkpoint: str | Path = DEFAULT_CHECKPOINT, limit: int | None = None) -> None:
     np, torch, modules = _require_modules()
     load_from_disk, AutoModelForSequenceClassification, AutoTokenizer = modules
-    checkpoint = Path(checkpoint)
-    if not checkpoint.is_dir():
-        raise FileNotFoundError(f"Checkpoint directory does not exist: {checkpoint}")
+    checkpoint_ref = str(checkpoint)
+    is_hub_id = (
+        "/" in checkpoint_ref
+        and not checkpoint_ref.startswith("./")
+        and not checkpoint_ref.startswith("/")
+    )
+    if not is_hub_id:
+        checkpoint_path = Path(checkpoint_ref)
+        if not checkpoint_path.is_dir():
+            raise FileNotFoundError(
+                f"Checkpoint directory does not exist: {checkpoint_path}"
+            )
     datasets = {
         "primary_val": _load_cached(load_from_disk, "primary_val", limit),
         "primary_test": _load_cached(load_from_disk, "primary_test", limit),
@@ -277,8 +286,8 @@ def evaluate(checkpoint: str | Path = DEFAULT_CHECKPOINT, limit: int | None = No
     else:
         print("WARNING: WildJailbreak cache unavailable; skipping adversarial_benign evaluation.")
 
-    tokenizer = AutoTokenizer.from_pretrained(str(checkpoint))
-    model = AutoModelForSequenceClassification.from_pretrained(str(checkpoint))
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_ref)
+    model = AutoModelForSequenceClassification.from_pretrained(checkpoint_ref)
     model.to("cpu")
     validation_scores = _scores(model, tokenizer, datasets["primary_val"], torch)
     threshold, threshold_info = _choose_threshold(
