@@ -20,12 +20,13 @@ CACHE_DIR = ARTIFACTS_DIR / "cache"
 CONFIG_PATH = ROOT / "configs" / "deberta_small.yaml"
 
 
-def _read_config() -> dict[str, Any]:
+def _read_config(config_path: str | Path | None = None) -> dict[str, Any]:
+    path = Path(config_path) if config_path is not None else CONFIG_PATH
     try:
         import yaml
     except ImportError:
         values: dict[str, Any] = {}
-        for line in CONFIG_PATH.read_text(encoding="utf-8").splitlines():
+        for line in path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or ":" not in line:
                 continue
@@ -39,7 +40,7 @@ def _read_config() -> dict[str, Any]:
                     value = raw
             values[key] = value
         return values
-    with CONFIG_PATH.open(encoding="utf-8") as handle:
+    with path.open(encoding="utf-8") as handle:
         return yaml.safe_load(handle)
 
 
@@ -226,8 +227,8 @@ def _write_train_log(trainer: Any) -> None:
         writer.writerows(history)
 
 
-def train(limit: int | None = None) -> None:
-    config = _read_config()
+def train(limit: int | None = None, config_path: str | Path | None = None) -> None:
+    config = _read_config(config_path)
     repo_id = os.environ.get("HF_REPO")
     if not repo_id:
         raise RuntimeError("HF_REPO is required for training uploads.")
@@ -283,11 +284,19 @@ def train(limit: int | None = None) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Optional YAML configuration path; defaults to configs/deberta_small.yaml.",
+    )
     parser.add_argument("--limit", type=int, default=None, help="Maximum rows per training split.")
     parser.add_argument("--dry-run", action="store_true", help="Print configuration without loading data or models.")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be a positive integer")
+    if args.config is not None and not args.config.is_file():
+        parser.error(f"--config file does not exist: {args.config}")
     return args
 
 
@@ -295,10 +304,10 @@ def main() -> None:
     args = parse_args()
     if args.dry_run:
         print("Dry run: no datasets, models, or GPUs used.")
-        print(json.dumps(_read_config(), indent=2))
+        print(json.dumps(_read_config(args.config), indent=2))
         print(f"Row limit per split: {args.limit if args.limit is not None else 'unlimited'}")
         return
-    train(args.limit)
+    train(args.limit, args.config)
 
 
 if __name__ == "__main__":
