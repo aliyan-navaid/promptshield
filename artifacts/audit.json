@@ -1,0 +1,34 @@
+{
+  "normalization": {
+    "operation": "lowercase, remove zero-width characters, strip surrounding whitespace",
+    "hash": "sha256"
+  },
+  "limit": 500,
+  "group_integrity": {
+    "passed": true,
+    "rows_by_split": {
+      "train": 200,
+      "val": 200,
+      "test": 200
+    },
+    "unique_group_ids": 599,
+    "rows_missing_group_id": 0,
+    "groups_spanning_splits": {},
+    "groups_spanning_split_count": 0
+  },
+  "external_overlaps": [
+    {
+      "dataset": "cross_source_test",
+      "primary_train_rows": 200,
+      "external_rows": 200,
+      "exact_overlap_values": 0,
+      "exact_overlap_rows": 0,
+      "normalized_hash_overlap_values": 0,
+      "normalized_hash_overlap_rows": 0,
+      "removed_indices": [],
+      "removed_count": 0,
+      "remaining_count": 200
+    }
+  ],
+  "filtered_cache_suffix": "_audit_filtered"
+}
