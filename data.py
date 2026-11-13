@@ -32,6 +32,7 @@ COMMON_COLUMNS = [
     "dataset",
     "split",
     "evaluation_only",
+    "data_type",
 ]
 ZERO_WIDTH_RE = re.compile(r"[\u200b-\u200d\ufeff]")
 
@@ -92,6 +93,7 @@ def _normalize(
                 "dataset": dataset_name,
                 "split": split,
                 "evaluation_only": evaluation_only,
+                "data_type": _value(row, "data_type", ""),
             }
         )
     return Dataset.from_list(rows).select_columns(COMMON_COLUMNS)
@@ -183,21 +185,39 @@ def _load_cross_source(load_dataset: Any, limit: int | None) -> Any:
 
 
 def _load_wildjailbreak(load_dataset: Any, limit: int | None) -> Any:
-    dataset_dict = load_dataset(
-        WILDJAILBREAK_ID,
-        "eval",
-        delimiter="\t",
-        keep_default_na=False,
-        cache_dir=str(CACHE_DIR / "downloads"),
-    )
+    from huggingface_hub.errors import GatedRepoError
+
+    try:
+        dataset_dict = load_dataset(
+            WILDJAILBREAK_ID,
+            "eval",
+            delimiter="\t",
+            keep_default_na=False,
+            cache_dir=str(CACHE_DIR / "downloads"),
+        )
+    except GatedRepoError:
+        print(
+            "ACTION REQUIRED: Go to "
+            "https://huggingface.co/datasets/allenai/wildjailbreak, "
+            "log in, and click 'Agree and access repository'. Then rerun."
+        )
+        return None
     keys = _split_keys(dataset_dict, "WildJailbreak")
-    real_split = next((key for key in ("eval", "test") if key in keys), None)
+    real_split = "train" if "train" in keys else next(
+        (key for key in ("eval", "test") if key in keys),
+        None,
+    )
     if real_split is None:
         raise RuntimeError(
             "WildJailbreak has no usable evaluation split; "
             f"available splits: {keys}"
         )
     dataset = dataset_dict[real_split]
+    if "data_type" not in dataset.column_names:
+        raise RuntimeError(
+            "WildJailbreak eval split is missing required column 'data_type'; "
+            f"available columns: {dataset.column_names}"
+        )
     return _normalize(
         dataset,
         dataset_name="wildjailbreak",
@@ -232,10 +252,11 @@ def load_all(limit: int | None = None) -> dict[str, Any]:
         wild_status["warning"] = f"WildJailbreak unavailable; skipping it: {exc}"
         print(f"WARNING: {wild_status['warning']}", file=sys.stderr)
     else:
-        wild_status["available"] = True
-        datasets["wildjailbreak_eval"] = wild
-        _print_dataset(wild, "wildjailbreak/eval")
-        _cache_split(wild, CACHE_DIR / "wildjailbreak_eval")
+        if wild is not None:
+            wild_status["available"] = True
+            datasets["wildjailbreak_eval"] = wild
+            _print_dataset(wild, "wildjailbreak/eval")
+            _cache_split(wild, CACHE_DIR / "wildjailbreak_eval")
     (CACHE_DIR / "wildjailbreak_status.json").write_text(
         json.dumps(wild_status, indent=2) + "\n", encoding="utf-8"
     )
