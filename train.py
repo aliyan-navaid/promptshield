@@ -167,8 +167,9 @@ def _arguments(TrainingArguments: Any, config: dict[str, Any], use_fp16: bool) -
         "learning_rate": float(config["learning_rate"]),
         "num_train_epochs": float(config["num_train_epochs"]),
         "warmup_ratio": float(config["warmup_ratio"]),
-        "fp16": use_fp16,
+        "fp16": False,
         "bf16": False,
+        "optim": "adamw_torch",
         "seed": int(config["seed"]),
         "data_seed": int(config["seed"]),
         "evaluation_strategy": "epoch",
@@ -248,8 +249,7 @@ def train(limit: int | None = None, config_path: str | Path | None = None) -> No
         config["model_name"],
         num_labels=2,
     )
-    use_fp16 = bool(config["fp16"]) and __import__("torch").cuda.is_available()
-    arguments = _arguments(TrainingArguments, config, use_fp16)
+    arguments = _arguments(TrainingArguments, config, False)
     trainer_kwargs = {
         "model": model,
         "args": arguments,
