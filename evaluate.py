@@ -355,9 +355,18 @@ def evaluate(checkpoint: str | Path = DEFAULT_CHECKPOINT, limit: int | None = No
         json.dumps({"main_model": {"threshold": threshold, **threshold_info}}, indent=2) + "\n",
         encoding="utf-8",
     )
-    (ARTIFACTS_DIR / "latency.json").write_text(json.dumps(latency, indent=2) + "\n", encoding="utf-8")
+    (ARTIFACTS_DIR / "latency.json").write_text(json.dumps(latency, indent=2) + "\n", encoding="utf-8"    )
     with (ARTIFACTS_DIR / "per_category.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["dataset", "category", "count", "malicious_count", "recall"])
+        fieldnames = list(category_rows[0].keys()) if category_rows else [
+            "dataset",
+            "category",
+            "count",
+            "malicious_count",
+            "recall",
+            "precision",
+            "f1",
+        ]
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(category_rows)
     _write_predictions(prediction_rows)
