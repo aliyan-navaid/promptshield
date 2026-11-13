@@ -191,6 +191,7 @@ def _arguments(TrainingArguments: Any, config: dict[str, Any], use_fp16: bool) -
         "optim": "adamw_torch",
         "max_grad_norm": 1.0,
         "weight_decay": 0.01,
+        "dataloader_num_workers": 0,
         "seed": int(config["seed"]),
         "data_seed": int(config["seed"]),
         "evaluation_strategy": "epoch",
@@ -221,10 +222,16 @@ def _checkpoint_callback(TrainerCallback: Any, repo_id: str | None) -> Any:
             if tokenizer is not None:
                 tokenizer.save_pretrained(checkpoint)
             if repo_id:
-                model.push_to_hub(
-                    repo_id=repo_id,
-                    commit_message=f"Save epoch {epoch} checkpoint",
-                )
+                try:
+                    model.push_to_hub(
+                        repo_id=repo_id,
+                        commit_message=f"Save epoch {epoch} checkpoint",
+                    )
+                except Exception as exc:
+                    print(
+                        f"WARNING: Failed to push epoch {epoch} checkpoint to Hub; "
+                        f"continuing training: {exc}"
+                    )
             return control
 
     return EpochCheckpointCallback()
