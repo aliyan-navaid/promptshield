@@ -165,7 +165,7 @@ def _plot_outputs(
         labels_by_name, scores_by_name, threshold, categories_by_name
     )
     categories = [f"{row['dataset']}:{row['category']}" for row in category_rows]
-    recalls = [row["recall"] for row in category_rows]
+    recalls = [float(row["recall"]) if row["recall"] is not None else 0.0 for row in category_rows]
     plt.figure(figsize=(max(8, len(categories) * 0.35), 5))
     plt.bar(categories, recalls)
     plt.xticks(rotation=75, ha="right")
@@ -205,7 +205,15 @@ def _category_rows(
                     "category": category,
                     "count": len(indices),
                     "malicious_count": actual_positive,
-                    "recall": true_positive / actual_positive if actual_positive else None,
+                    "recall": true_positive / actual_positive if actual_positive else 0.0,
+                    "precision": (
+                        true_positive / sum(predictions) if sum(predictions) else 0.0
+                    ),
+                    "f1": (
+                        2 * true_positive / (actual_positive + sum(predictions))
+                        if actual_positive + sum(predictions)
+                        else 0.0
+                    ),
                 }
             )
     return rows
